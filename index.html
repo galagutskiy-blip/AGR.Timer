@@ -4,12 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#3498db">
-    <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-<meta name="apple-mobile-web-app-title" content="МКС Таймер">
-<meta name="application-name" content="МКС Таймер">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>⏱️ МКС: Таймер смены + счётчик</title>
@@ -784,6 +778,11 @@
             margin-top: 0;
         }
 
+        /* Скрытие счётчика для Галагуцкой */
+        .money-counter-block.hidden {
+            display: none;
+        }
+
         #timer-app .timer-display {
             font-size: 38px;
             font-weight: 700;
@@ -1410,10 +1409,19 @@
         }
 
         function updateMoneyCounter(now) {
+            const moneyBlock = document.getElementById('moneyCounterBlock');
+            // Скрываем счётчик для Галагуцкой
+            if (currentSignatureType === 2) {
+                if (moneyBlock) moneyBlock.classList.add('hidden');
+                return;
+            }
+            if (moneyBlock) moneyBlock.classList.remove('hidden');
+
             const shiftInfo = getCurrentShiftInfo(now);
             const isPartTime = document.getElementById('partTimeCheckbox').checked;
             const maxMoney = getMoneyMax(shiftInfo.shift, isPartTime);
             const el = document.getElementById('moneyAmount');
+            if (!el) return;
             if (!shiftInfo.isActive || !shiftInfo.start || !shiftInfo.end) {
                 el.textContent = '0';
                 return;
@@ -2249,6 +2257,7 @@
                 btn2.classList.toggle('active', currentSignatureType === 2);
             }
             localStorage.setItem('signatureType', currentSignatureType.toString());
+            updateMoneyCounter(new Date());
             checkAndApplyHolidayTheme();
             updateSchedule();
         }
@@ -2264,22 +2273,13 @@
                     btn2.classList.toggle('active', currentSignatureType === 2);
                 }
             }
+            // Принудительно обновляем счётчик при загрузке
+            updateMoneyCounter(new Date());
         }
 
         document.getElementById('partTimeCheckbox').addEventListener('change', function() {
             updateMoneyCounter(new Date());
         });
     </script>
-
-<script>
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(err => {
-            console.warn('PWA Service Worker registration failed:', err);
-        });
-    });
-}
-</script>
-
 </body>
 </html>
