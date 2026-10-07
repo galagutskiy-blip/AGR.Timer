@@ -1,0 +1,2268 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#3498db">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>⏱️ МКС: Таймер смены + счётчик</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            color: #333;
+            line-height: 1.6;
+            padding: 15px;
+            max-width: 100%;
+            overflow-x: hidden;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.5s ease, color 0.5s ease;
+            position: relative;
+            min-height: 100vh;
+            background: #f0f2f5;
+        }
+        body.night-shift {
+            background: #1a1a2e;
+            color: #e0e0e0;
+        }
+        body.night-shift #sticky-current-time {
+            background: rgba(30, 30, 60, 0.9);
+            border-color: #6a6a9e;
+            color: #ddd;
+        }
+        body.night-shift #timer-app {
+            background: rgba(30, 30, 60, 0.95);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            border: 1px solid #4a4a7a;
+        }
+        body.night-shift #timer-app h2 {
+            color: #a8a8e0;
+        }
+        body.night-shift .schedule-panel {
+            background: rgba(30, 30, 60, 0.95);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            border: 1px solid #4a4a7a;
+        }
+        body.night-shift .schedule-panel h2 {
+            color: #a8a8e0;
+        }
+        body.night-shift .schedule-item.work {
+            background: rgba(231, 76, 60, 0.25);
+        }
+        body.night-shift .schedule-item.break {
+            background: rgba(46, 204, 113, 0.2);
+        }
+        body.night-shift .schedule-item.meal {
+            background: rgba(144, 238, 144, 0.15);
+        }
+        body.night-shift .schedule-item.night {
+            background: rgba(231, 76, 60, 0.25);
+        }
+        body.night-shift .schedule-time {
+            color: #ccc;
+        }
+        body.night-shift .schedule-desc {
+            color: #ccc;
+        }
+        body.night-shift .page-footer {
+            color: #888;
+            border-top-color: #444;
+        }
+        body.night-shift .signature-switcher {
+            background: rgba(50, 50, 80, 0.8);
+            border-color: #6a6a9e;
+        }
+        body.night-shift .signature-type-btn:not(.active) {
+            color: #ccc;
+        }
+        body.night-shift .signature-type-btn:not(.active):hover {
+            background: rgba(80, 80, 120, 0.3);
+        }
+        body.night-shift #timer-app .progress-container {
+            background: rgba(70, 70, 100, 0.5);
+        }
+        body.night-shift #timer-app .progress-labels {
+            color: #aaa;
+        }
+        body.night-shift #timer-app .progress-percentage {
+            color: #ddd;
+        }
+        body.night-shift #timer-app .timer-display {
+            border-color: #4a4a7a;
+        }
+        body.night-shift #timer-app .timer-display #mainTimer {
+            color: #e0e0e0;
+        }
+        body.night-shift #timer-app .timer-display.work-time #mainTimer {
+            color: #ff6b6b;
+        }
+        body.night-shift #timer-app .timer-display.break-time #mainTimer {
+            color: #51cf66;
+        }
+        body.night-shift #timer-app .timer-display.meal-time #mainTimer {
+            color: #aed581;
+        }
+        body.night-shift #timer-app .timer-display.next-shift-time #mainTimer {
+            color: #74c0fc;
+        }
+        body.night-shift #timer-app .timer-event {
+            color: #aaa;
+        }
+        body.night-shift #timer-app .shift-info {
+            background: rgba(50, 50, 80, 0.6);
+            border-left-color: #6a6a9e;
+            color: #ddd;
+        }
+        body.night-shift #timer-app .signature-output {
+            background: rgba(50, 50, 80, 0.6);
+            border-left-color: #6a6a9e;
+            color: #ddd;
+        }
+        body.night-shift #timer-app .footer {
+            border-top-color: #444;
+            color: #888;
+        }
+        body.night-shift .first-launch-content {
+            background: #2a2a4a;
+            color: #eee;
+        }
+        body.night-shift .first-launch-content h3 {
+            color: #a8a8e0;
+        }
+        body.night-shift .first-launch-message {
+            color: #ddd;
+        }
+        body.night-shift .first-launch-close {
+            color: #aaa;
+        }
+        body.night-shift .first-launch-close:hover {
+            background: #3a3a5a;
+            color: #ff6b6b;
+        }
+        body.night-shift .first-launch-btn.secondary {
+            background: #3a3a5a;
+            color: #ddd;
+            border-color: #5a5a7a;
+        }
+        body.night-shift .copy-notification {
+            background: rgba(30, 30, 60, 0.95);
+            color: #e0e0e0;
+        }
+        body.night-shift .internet-indicator {
+            opacity: 0.9;
+        }
+        body.night-shift #event-progress-container {
+            background: rgba(70, 70, 100, 0.4);
+        }
+        body.night-shift #event-progress-labels {
+            color: #aaa;
+        }
+        body.night-shift #event-progress-labels .event-label-start {
+            color: #aaa;
+        }
+        body.night-shift #event-progress-labels .event-label-end {
+            color: #aaa;
+        }
+        body.night-shift #event-progress-labels .event-label-current {
+            color: #ddd;
+        }
+        body.night-shift .schedule-item.active .schedule-time {
+            color: #fff;
+        }
+        body.night-shift .schedule-item .item-progress-text {
+            color: #aaa;
+        }
+        body.night-shift #event-progress-container .event-progress-bar.meal {
+            background: linear-gradient(90deg, #aed581, #7cb342);
+        }
+        body.night-shift .schedule-item.meal .item-progress-bar {
+            background: linear-gradient(90deg, #aed581, #7cb342);
+        }
+        body.night-shift .schedule-item.meal .schedule-icon {
+            color: #aed581;
+        }
+
+        body.day-shift {
+            background: #f0f2f5;
+            color: #333;
+        }
+        body.day-shift #sticky-current-time {
+            background: rgba(227, 242, 253, 0.8);
+            border-color: #2196F3;
+            color: #333;
+        }
+        body.day-shift #timer-app {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border: none;
+        }
+        body.day-shift #timer-app h2 {
+            color: #1a3c6e;
+        }
+        body.day-shift .schedule-panel {
+            background: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border: none;
+        }
+        body.day-shift .schedule-panel h2 {
+            color: #1a3c6e;
+        }
+        body.day-shift .schedule-item.work {
+            background: rgba(231, 76, 60, 0.1);
+        }
+        body.day-shift .schedule-item.break {
+            background: rgba(46, 204, 113, 0.1);
+        }
+        body.day-shift .schedule-item.meal {
+            background: rgba(144, 238, 144, 0.3);
+        }
+        body.day-shift .schedule-item.night {
+            background: rgba(231, 76, 60, 0.1);
+        }
+        body.day-shift .schedule-time {
+            color: #333;
+        }
+        body.day-shift .schedule-desc {
+            color: #333;
+        }
+        body.day-shift .page-footer {
+            color: #95a5a6;
+            border-top-color: #eee;
+        }
+        body.day-shift .signature-switcher {
+            background: rgba(227, 242, 253, 0.8);
+            border-color: #2196F3;
+        }
+        body.day-shift .signature-type-btn:not(.active) {
+            color: #555;
+        }
+        body.day-shift .signature-type-btn:not(.active):hover {
+            background: rgba(52, 152, 219, 0.1);
+        }
+        body.day-shift #timer-app .progress-container {
+            background: rgba(224, 224, 224, 0.5);
+        }
+        body.day-shift #timer-app .progress-labels {
+            color: #666;
+        }
+        body.day-shift #timer-app .progress-percentage {
+            color: #333;
+        }
+        body.day-shift #timer-app .timer-display {
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+        body.day-shift #timer-app .timer-display #mainTimer {
+            color: #222;
+        }
+        body.day-shift #timer-app .timer-display.work-time #mainTimer {
+            color: #d32f2f;
+        }
+        body.day-shift #timer-app .timer-display.break-time #mainTimer {
+            color: #2e7d32;
+        }
+        body.day-shift #timer-app .timer-display.meal-time #mainTimer {
+            color: #7cb342;
+        }
+        body.day-shift #timer-app .timer-display.next-shift-time #mainTimer {
+            color: #1565c0;
+        }
+        body.day-shift #timer-app .shift-info {
+            background: rgba(232, 245, 233, 0.8);
+            border-left-color: #4CAF50;
+            color: #333;
+        }
+        body.day-shift #timer-app .signature-output {
+            background: rgba(232, 245, 233, 0.8);
+            border-left-color: #4CAF50;
+            color: #333;
+        }
+        body.day-shift #timer-app .footer {
+            border-top-color: #ccc;
+            color: #666;
+        }
+        body.day-shift .first-launch-content {
+            background: white;
+            color: #333;
+        }
+        body.day-shift .first-launch-content h3 {
+            color: #3498db;
+        }
+        body.day-shift .first-launch-message {
+            color: #444;
+        }
+        body.day-shift .first-launch-close {
+            color: #95a5a6;
+        }
+        body.day-shift .first-launch-close:hover {
+            background: #f8f9fa;
+            color: #e74c3c;
+        }
+        body.day-shift .first-launch-btn.secondary {
+            background: #f8f9fa;
+            color: #495057;
+            border-color: #e9ecef;
+        }
+        body.day-shift .copy-notification {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+        }
+        body.day-shift #event-progress-container {
+            background: rgba(224, 224, 224, 0.5);
+        }
+        body.day-shift #event-progress-labels {
+            color: #888;
+        }
+        body.day-shift #event-progress-labels .event-label-start {
+            color: #666;
+        }
+        body.day-shift #event-progress-labels .event-label-end {
+            color: #666;
+        }
+        body.day-shift #event-progress-labels .event-label-current {
+            color: #333;
+        }
+        body.day-shift .schedule-item.active .schedule-time {
+            color: #000;
+        }
+        body.day-shift .schedule-item .item-progress-text {
+            color: #666;
+        }
+        body.day-shift #event-progress-container .event-progress-bar.meal {
+            background: linear-gradient(90deg, #aed581, #7cb342);
+        }
+        body.day-shift .schedule-item.meal .item-progress-bar {
+            background: linear-gradient(90deg, #aed581, #7cb342);
+        }
+        body.day-shift .schedule-item.meal .schedule-icon {
+            color: #7cb342;
+        }
+
+        .signature-type-btn {
+            border-radius: 12px;
+        }
+        #timer-app .signature-btn {
+            border-radius: 14px;
+        }
+        #timer-app .copy-btn {
+            border-radius: 14px;
+        }
+        .first-launch-btn {
+            border-radius: 14px;
+        }
+        .first-launch-close {
+            border-radius: 50%;
+        }
+        .internet-indicator.expanded {
+            border-radius: 20px;
+        }
+
+        #season-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9998;
+            display: none;
+            overflow: hidden;
+        }
+        .snowflake {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            filter: blur(1px);
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+            animation: snow-fall linear infinite;
+        }
+        @keyframes snow-fall {
+            to { transform: translateY(100vh) rotate(360deg); }
+        }
+        .tulip {
+            position: absolute;
+            bottom: 0;
+            font-size: 30px;
+            z-index: 1;
+            animation: tulip-appear 2s ease-out forwards;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        @keyframes tulip-appear {
+            0% { transform: scale(0) translateY(50px); opacity: 0; }
+            70% { transform: scale(1.1) translateY(-5px); }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .grass-blade {
+            position: absolute;
+            bottom: 0;
+            background: linear-gradient(to top, #2e7d32, #4caf50);
+            border-radius: 2px 2px 0 0;
+            box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+            transform-origin: bottom center;
+            animation: grass-grow 1.5s ease-out forwards;
+        }
+        @keyframes grass-grow {
+            0% { height: 0; opacity: 0; transform: scaleY(0); }
+            100% { height: var(--grass-height); opacity: 1; transform: scaleY(1); }
+        }
+        .leaf {
+            position: absolute;
+            top: -50px;
+            font-size: 24px;
+            opacity: 0;
+            animation: leaf-fall linear forwards;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        @keyframes leaf-fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        .app-container { animation: fadeIn 0.5s; position: relative; z-index: 1; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .holiday-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(90deg, rgba(255,255,255,0.1), rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+            color: white;
+            text-align: center;
+            padding: 10px;
+            z-index: 9999;
+            font-weight: bold;
+            font-size: 14px;
+            display: none;
+            backdrop-filter: blur(5px);
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+            animation: slideDown 0.5s ease;
+        }
+        .holiday-banner.holiday-new-year { background: linear-gradient(90deg, rgba(255,215,0,0.3), rgba(255,255,255,0.3), rgba(255,215,0,0.3)); }
+        .holiday-banner.holiday-christmas { background: linear-gradient(90deg, rgba(220,20,60,0.3), rgba(255,255,255,0.3), rgba(0,128,0,0.3)); }
+        .holiday-banner.holiday-valentine { background: linear-gradient(90deg, rgba(255,105,180,0.3), rgba(255,255,255,0.3), rgba(255,105,180,0.3)); }
+        .holiday-banner.holiday-march8 { background: linear-gradient(90deg, rgba(255,182,193,0.3), rgba(255,255,255,0.3), rgba(255,182,193,0.3)); }
+        .holiday-banner.holiday-may9 { background: linear-gradient(90deg, rgba(255,0,0,0.3), rgba(255,255,255,0.3), rgba(0,0,255,0.3)); }
+        .holiday-banner.holiday-birthday { background: linear-gradient(90deg, rgba(255,107,107,0.3), rgba(255,209,102,0.3), rgba(255,107,107,0.3)); }
+        .holiday-banner.holiday-family { background: linear-gradient(90deg, rgba(6,214,160,0.3), rgba(17,138,178,0.3), rgba(6,214,160,0.3)); }
+        .holiday-icon { margin-right: 8px; font-size: 16px; }
+        .page-footer { text-align: center; font-size: 0.8em; font-style: italic; margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; }
+        @media (max-width: 380px) { body { padding: 10px; } #timer-app { padding: 15px !important; } }
+
+        #event-progress-container {
+            width: 100%;
+            height: 10px;
+            background: rgba(224, 224, 224, 0.5);
+            border-radius: 10px;
+            margin: 10px 0 15px 0;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.5s ease;
+            display: none;
+        }
+        #event-progress-container.visible {
+            display: block;
+        }
+        #event-progress-container .event-progress-bar {
+            height: 100%;
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        #event-progress-container .event-progress-bar.work {
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+        }
+        #event-progress-container .event-progress-bar.break {
+            background: linear-gradient(90deg, #2ecc71, #27ae60);
+        }
+        #event-progress-container .event-progress-bar.meal {
+            background: linear-gradient(90deg, #aed581, #7cb342);
+        }
+        #event-progress-container .event-progress-bar.next {
+            background: linear-gradient(90deg, #3498db, #2980b9);
+        }
+        #event-progress-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-top: 2px;
+            padding: 0 2px;
+            display: none;
+        }
+        #event-progress-labels.visible {
+            display: flex;
+        }
+        .first-launch-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+        .first-launch-modal.active { display: flex; animation: fadeIn 0.3s ease; }
+        .first-launch-content {
+            border-radius: 18px;
+            padding: 25px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .first-launch-content h3 { margin-bottom: 15px; text-align: center; font-size: 1.4em; }
+        .first-launch-icon { text-align: center; font-size: 3em; margin-bottom: 15px; }
+        .first-launch-message { margin-bottom: 20px; font-size: 1.1em; line-height: 1.5; text-align: center; }
+        .first-launch-buttons { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+        .first-launch-btn {
+            padding: 15px;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .first-launch-btn.primary { background: linear-gradient(135deg, #3498db, #2980b9); color: white; }
+        .first-launch-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); }
+        .first-launch-btn:active { transform: translateY(0); }
+        .first-launch-close { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+        .first-launch-checkbox { display: flex; align-items: center; gap: 8px; margin-top: 15px; font-size: 0.9em; }
+        .internet-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            border-radius: 20px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            padding: 0;
+            width: 12px;
+            height: 12px;
+            min-width: 12px;
+            min-height: 12px;
+            border-radius: 50%;
+            font-size: 0;
+            opacity: 0.7;
+            overflow: hidden;
+            cursor: pointer;
+            user-select: none;
+        }
+        .internet-indicator.expanded {
+            padding: 8px 12px;
+            width: auto;
+            height: auto;
+            min-width: 120px;
+            min-height: auto;
+            border-radius: 20px;
+            font-size: 12px;
+            opacity: 1;
+        }
+        .internet-indicator .internet-icon,
+        .internet-indicator .internet-text,
+        .internet-indicator .internet-speed { display: none; }
+        .internet-indicator.expanded .internet-icon,
+        .internet-indicator.expanded .internet-text,
+        .internet-indicator.expanded .internet-speed { display: flex; }
+        .internet-indicator::after { content: '•'; font-size: 24px; line-height: 1; color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .internet-indicator.expanded::after { content: ''; display: none; }
+        .internet-indicator:hover { opacity: 1; transform: scale(1.2); }
+        .internet-indicator.expanded:hover { transform: none; }
+        .internet-indicator.wifi { background-color: rgba(46, 204, 113, 0.9); box-shadow: 0 0 15px rgba(46, 204, 113, 0.5); }
+        .internet-indicator.mobile { background-color: rgba(52, 152, 219, 0.9); box-shadow: 0 0 15px rgba(52, 152, 219, 0.5); }
+        .internet-indicator.offline { background-color: rgba(231, 76, 60, 0.9); box-shadow: 0 0 15px rgba(231, 76, 60, 0.5); }
+        .internet-indicator.slow { background-color: rgba(243, 156, 18, 0.9); box-shadow: 0 0 15px rgba(243, 156, 18, 0.5); }
+        .internet-indicator.expanded::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 22px;
+            animation: pulse 2s infinite;
+            z-index: -1;
+        }
+        .internet-indicator.expanded.wifi::before { border: 2px solid rgba(46, 204, 113, 0.5); }
+        .internet-indicator.expanded.mobile::before { border: 2px solid rgba(52, 152, 219, 0.5); }
+        .internet-indicator.expanded.offline::before { border: 2px solid rgba(231, 76, 60, 0.5); animation: pulse-offline 2s infinite; }
+        .internet-indicator.expanded.slow::before { border: 2px solid rgba(243, 156, 18, 0.5); }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.05); opacity: 0; } }
+        @keyframes pulse-offline { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.02); opacity: 0.5; } 100% { transform: scale(1); opacity: 0.8; } }
+        .internet-icon { font-size: 14px; min-width: 20px; text-align: center; }
+        .internet-text { flex: 1; text-align: center; }
+        .internet-speed { font-size: 10px; opacity: 0.8; }
+
+        .schedule-item .item-progress-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+            position: relative;
+            display: none;
+        }
+        .schedule-item.active .item-progress-container { display: block; }
+        .schedule-item .item-progress-bar {
+            height: 100%;
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        .schedule-item.work .item-progress-bar { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+        .schedule-item.break .item-progress-bar { background: linear-gradient(90deg, #2ecc71, #27ae60); }
+        .schedule-item.meal .item-progress-bar { background: linear-gradient(90deg, #aed581, #7cb342); }
+        .schedule-item.night .item-progress-bar { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+        .schedule-item .item-progress-text { font-size: 10px; text-align: right; margin-top: 2px; font-weight: bold; }
+        .schedule-item.active { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); border-left-width: 6px; }
+        .schedule-item.active .schedule-icon { animation: pulse-icon 2s infinite; }
+        @keyframes pulse-icon { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .schedule-item.completed { opacity: 0.7; }
+        .schedule-item.completed .schedule-time { text-decoration: line-through; color: #999; }
+
+        #sticky-current-time {
+            font-size: 14px;
+            text-align: center;
+            margin: 0 auto 15px auto;
+            padding: 12px;
+            border-radius: 12px;
+            transition: all 0.5s ease;
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        #timer-app {
+            padding: 20px;
+            border-radius: 18px;
+            max-width: 400px;
+            margin: 0 auto;
+            width: 100%;
+            transition: all 0.5s ease;
+            position: relative;
+            z-index: 1;
+            backdrop-filter: blur(5px);
+        }
+        #timer-app h2 { margin: 0 0 20px 0; font-size: 20px; text-align: center; transition: color 0.5s ease; }
+        #timer-app .shift-info { padding: 10px; margin: 15px 0; border-radius: 12px; border-left: 4px solid #4CAF50; text-align: center; font-weight: bold; transition: all 0.5s ease; }
+        #timer-app .progress-container {
+            width: 100%;
+            height: 12px;
+            border-radius: 10px;
+            margin: 20px 0 10px 0;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.5s ease;
+        }
+        #timer-app .progress-bar {
+            height: 100%;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A, #FFC107, #FF9800, #F44336);
+            width: 0%;
+            transition: width 0.5s ease, background 0.5s ease;
+            position: relative;
+        }
+        #timer-app .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%);
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        #timer-app .progress-labels { display: flex; justify-content: space-between; margin-top: 5px; font-size: 12px; }
+        #timer-app .progress-percentage { text-align: center; font-size: 14px; font-weight: bold; margin-top: 5px; }
+        #timer-app .progress-milestone { position: absolute; top: -2px; width: 12px; height: 12px; background: white; border: 2px solid #333; border-radius: 50%; transform: translateX(-50%); z-index: 3; }
+        #timer-app .milestone-reached { background: #4CAF50; border-color: #2E7D32; }
+
+        /* Блок смены — два таймера рядом */
+        .shift-total-timer {
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+            padding: 10px 10px;
+            margin: 5px 0 15px 0;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(0,0,0,0.06);
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            transition: background 0.6s ease, border-color 0.6s ease, color 0.6s ease;
+        }
+        .shift-timer-half {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            flex: 1 1 40%;
+            min-width: 0;
+        }
+        .shift-total-timer .label {
+            font-weight: 400;
+            font-size: 12px;
+            opacity: 0.7;
+            white-space: nowrap;
+        }
+        .shift-total-timer .time {
+            font-feature-settings: "tnum";
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+            font-size: 18px;
+            transition: color 0.6s ease;
+            white-space: nowrap;
+        }
+
+        /* Счётчик денег — отдельный красивый блок под таймером */
+        .money-counter-block {
+            margin: 12px 0 8px 0;
+            padding: 8px 14px;
+            border-radius: 40px;
+            background: rgba(255, 215, 0, 0.08);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 18px;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+            backdrop-filter: blur(2px);
+            transition: all 0.3s ease;
+            width: auto;
+            justify-content: center;
+        }
+        .money-counter-block .money-label {
+            font-size: 14px;
+            opacity: 0.7;
+            font-weight: 300;
+        }
+        .money-counter-block .money-amount {
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            min-width: 60px;
+            display: inline-block;
+            transition: color 0.3s ease;
+        }
+        .money-counter-block .money-currency {
+            font-size: 16px;
+            opacity: 0.8;
+            font-weight: 300;
+        }
+        body.night-shift .money-counter-block {
+            background: rgba(255, 215, 0, 0.05);
+            border-color: rgba(255, 215, 0, 0.15);
+        }
+        .shift-total-timer + .money-counter-block {
+            margin-top: 0;
+        }
+
+        #timer-app .timer-display {
+            font-size: 38px;
+            font-weight: 700;
+            text-align: center;
+            margin: 12px 0 5px 0;
+            padding: 20px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+            transition: all 0.5s ease;
+            border: 1px solid rgba(0,0,0,0.08);
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.02);
+            backdrop-filter: blur(4px);
+            letter-spacing: 0.02em;
+        }
+        #timer-app .timer-display #mainTimer {
+            font-size: 68px;
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: 3px;
+            font-feature-settings: "tnum";
+            font-variant-numeric: tabular-nums;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: color 0.4s ease;
+        }
+        #timer-app .timer-event {
+            font-size: 16px;
+            margin-top: 10px;
+            text-align: center;
+            opacity: 0.85;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        @media (max-width: 420px) {
+            #timer-app .timer-display #mainTimer {
+                font-size: 48px;
+            }
+            #timer-app .timer-display {
+                min-height: 100px;
+                padding: 16px 12px;
+            }
+            .shift-total-timer {
+                font-size: 15px;
+                padding: 8px 6px;
+                gap: 4px;
+            }
+            .shift-total-timer .time {
+                font-size: 15px;
+            }
+            .shift-total-timer .label {
+                font-size: 11px;
+            }
+            .money-counter-block {
+                font-size: 15px;
+                padding: 6px 12px;
+                gap: 5px;
+            }
+            .money-counter-block .money-label {
+                font-size: 12px;
+            }
+        }
+
+        #timer-app .signature-btn {
+            border: none;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 12px;
+            width: 100%;
+            margin: 15px 0 5px 0;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            border-radius: 14px;
+        }
+        #timer-app .signature-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(52, 152, 219, 0.4); }
+        #timer-app .signature-btn:active { transform: translateY(0); }
+        #timer-app .signature-output { margin-top: 10px; padding: 10px; border-radius: 12px; border-left: 4px solid #4CAF50; font-family: monospace; font-size: 14px; text-align: center; display: none; white-space: pre-line; }
+        #timer-app .copy-btn {
+            border: none;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 12px;
+            width: 100%;
+            margin: 10px 0;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+            border-radius: 14px;
+            display: none;
+        }
+        #timer-app .copy-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(46, 204, 113, 0.4); }
+        #timer-app .footer { text-align: center; font-size: 12px; margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc; }
+
+        .vk-open-btn {
+            border: none;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 12px;
+            width: 100%;
+            margin: 8px 0;
+            background: linear-gradient(135deg, #4a76a8, #3b5f8a);
+            color: white;
+            box-shadow: 0 4px 15px rgba(74, 118, 168, 0.3);
+            border-radius: 14px;
+        }
+        .vk-open-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(74, 118, 168, 0.4);
+        }
+        .vk-open-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Кнопка полного экрана — фиолетовая */
+        .fullscreen-btn {
+            border: none;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 12px;
+            width: 100%;
+            margin: 8px 0;
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white;
+            box-shadow: 0 4px 15px rgba(155, 89, 182, 0.3);
+            border-radius: 14px;
+        }
+        .fullscreen-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(155, 89, 182, 0.4);
+        }
+        .fullscreen-btn:active {
+            transform: translateY(0);
+        }
+
+        .schedule-panel {
+            padding: 20px;
+            border-radius: 18px;
+            max-width: 400px;
+            margin: 20px auto 0 auto;
+            width: 100%;
+            transition: all 0.5s ease;
+            position: relative;
+            z-index: 1;
+            backdrop-filter: blur(5px);
+            display: block;
+        }
+        .schedule-panel h2 { margin: 0 0 20px 0; font-size: 20px; text-align: center; }
+        .schedule-list { list-style: none; margin: 15px 0; }
+        .schedule-item { padding: 12px 15px; margin-bottom: 10px; border-radius: 12px; display: flex; flex-direction: column; transition: transform 0.2s; position: relative; }
+        .schedule-item-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .schedule-item:hover { transform: translateY(-2px); }
+        .schedule-time { font-weight: bold; font-size: 16px; min-width: 90px; }
+        .schedule-desc { flex: 1; margin-left: 15px; font-size: 14px; }
+        .schedule-icon { font-size: 20px; min-width: 30px; text-align: center; }
+
+        .signature-switcher {
+            display: flex;
+            border-radius: 14px;
+            padding: 5px;
+            margin: 10px 0;
+            border: 1px solid #2196F3;
+        }
+        .signature-type-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            border-radius: 12px;
+        }
+        .signature-type-btn.active { background: linear-gradient(135deg, #3498db, #2980b9); color: white; box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3); }
+        .signature-type-icon { font-size: 16px; }
+
+        .copy-notification {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 30px;
+            z-index: 10000;
+            font-size: 14px;
+            font-weight: bold;
+            animation: fadeInOut 2s ease;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+        }
+
+        @media (max-width: 420px) {
+            .schedule-time { font-size: 14px; min-width: 75px; }
+            .schedule-desc { font-size: 12px; margin-left: 10px; }
+        }
+
+        .signature-extra-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin: 8px 0 4px 0;
+            font-size: 13px;
+            user-select: none;
+            cursor: pointer;
+        }
+        .signature-extra-wrapper input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #3498db;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .signature-extra-wrapper label {
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 13px;
+        }
+        body.night-shift .signature-extra-wrapper {
+            color: #ccc;
+        }
+        body.day-shift .signature-extra-wrapper {
+            color: #333;
+        }
+
+        .signature-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 15px 0 5px 0;
+        }
+        .signature-row .signature-btn {
+            flex: 2;
+            margin: 0;
+            font-size: 13px;
+            padding: 10px 8px;
+            min-width: 0;
+        }
+        .signature-row .signature-extra-wrapper {
+            flex: 0 0 auto;
+            margin: 0;
+            padding: 0 4px;
+            gap: 4px;
+        }
+        .signature-row .signature-extra-wrapper label {
+            font-size: 12px;
+        }
+        .signature-row .signature-extra-wrapper input[type="checkbox"] {
+            width: 15px;
+            height: 15px;
+        }
+        @media (max-width: 400px) {
+            .signature-row .signature-btn {
+                font-size: 12px;
+                padding: 10px 6px;
+            }
+            .signature-row .signature-extra-wrapper label {
+                font-size: 11px;
+            }
+        }
+        @media (max-width: 350px) {
+            .signature-row {
+                gap: 4px;
+            }
+            .signature-row .signature-btn {
+                font-size: 11px;
+                padding: 8px 4px;
+            }
+            .signature-row .signature-extra-wrapper label {
+                font-size: 10px;
+            }
+            .signature-row .signature-extra-wrapper input[type="checkbox"] {
+                width: 13px;
+                height: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="season-container"></div>
+    <div class="holiday-banner" id="holidayBanner">
+        <span class="holiday-icon" id="holidayIcon">🎉</span>
+        <span id="holidayText">Сегодня праздник!</span>
+    </div>
+    <div class="internet-indicator" id="internetIndicator">
+        <div class="internet-icon">🌐</div>
+        <div class="internet-text">Проверка...</div>
+        <div class="internet-speed"></div>
+    </div>
+    <div id="sticky-current-time" class="current-time">Текущее время: --:--:--</div>
+
+    <div id="timer-app" class="app-container">
+        <h2>⏱️ Таймер смены</h2>
+
+        <div class="shift-total-timer" id="shiftTotalTimer">
+            <div class="shift-timer-half">
+                <span class="label">⏳ Осталось:</span>
+                <span class="time" id="shiftTotalTime">--:--:--</span>
+            </div>
+            <div class="shift-timer-half">
+                <span class="label">✅ Прошло:</span>
+                <span class="time" id="shiftElapsedTime">--:--:--</span>
+            </div>
+        </div>
+
+        <!-- Счётчик денег отдельным красивым блоком -->
+        <div class="money-counter-block" id="moneyCounterBlock">
+            <span class="money-label">💰 Заработано:</span>
+            <span class="money-amount" id="moneyAmount">0</span>
+            <span class="money-currency">₽</span>
+        </div>
+
+        <div class="shift-info" id="shiftInfo">Смена: --</div>
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+            <div class="progress-milestone" style="left: 25%;" id="milestone1" title="10:20"></div>
+            <div class="progress-milestone" style="left: 50%;" id="milestone2" title="01:20"></div>
+            <div class="progress-milestone" style="left: 75%;" id="milestone3" title="16:20"></div>
+        </div>
+        <div class="progress-percentage" id="progressPercentage">0% выполнено</div>
+        <div class="progress-labels">
+            <span>Начало</span>
+            <span id="milestoneLabel1">10:20</span>
+            <span id="halfShiftLabel">01:20</span>
+            <span id="milestoneLabel3">16:20</span>
+            <span>Конец</span>
+        </div>
+        <div class="timer-display" id="timerDisplay">
+            <div id="mainTimer">--:--:--</div>
+            <div class="timer-event" id="timerEvent">--</div>
+        </div>
+
+        <div id="event-progress-container">
+            <div class="event-progress-bar" id="eventProgressBar"></div>
+        </div>
+        <div id="event-progress-labels">
+            <span class="event-label-start" id="eventLabelStart">Начало</span>
+            <span class="event-label-current" id="eventLabelCurrent">⏳ 0%</span>
+            <span class="event-label-end" id="eventLabelEnd">Конец</span>
+        </div>
+
+        <div class="signature-switcher">
+            <button class="signature-type-btn active" id="btnSignature1" onclick="switchSignatureType(1)">
+                <span class="signature-type-icon">👨</span>
+                Галагуцкий Е.В.
+            </button>
+            <button class="signature-type-btn" id="btnSignature2" onclick="switchSignatureType(2)">
+                <span class="signature-type-icon">👩</span>
+                Галагуцкая С.В.
+            </button>
+        </div>
+
+        <div class="signature-row">
+            <button class="signature-btn" onclick="generateSignatureAndCopy()">
+                📝 Сформировать подпись
+            </button>
+            <div class="signature-extra-wrapper">
+                <input type="checkbox" id="partTimeCheckbox">
+                <label for="partTimeCheckbox">➕ Подр.</label>
+            </div>
+        </div>
+
+        <button class="vk-open-btn" onclick="openVKGroup()">
+            🌐 Открыть ВКонтакте
+        </button>
+
+        <button class="fullscreen-btn" onclick="toggleFullscreen()">
+            ⛶ Полный экран
+        </button>
+
+        <div id="signatureOutput" class="signature-output"></div>
+        <button class="copy-btn" id="copyBtn" onclick="copySignatureToClipboard()">
+            📋 Скопировать подпись ещё раз
+        </button>
+        <div class="footer">© Галагуцкий Е.В.</div>
+    </div>
+
+    <div id="schedule-app" class="schedule-panel">
+        <h2>🍽️ Расписание обедов и перерывов</h2>
+        <div class="shift-info" id="scheduleShiftInfo">Смена: --</div>
+        <ul class="schedule-list" id="scheduleList"></ul>
+    </div>
+
+    <script>
+        // ===== НАСТРОЙКА ВКОНТАКТЕ =====
+        const VK_GROUP_URL = 'https://vk.com/jmkaluga';
+        // =================================
+
+        let timerInterval = null;
+        let scheduleInterval = null;
+        let timerCurrentSignature = '';
+        let internetCheckInterval = null;
+        let currentHoliday = null;
+        let currentSignatureType = 1;
+        let seasonInterval = null;
+        let currentSeason = null;
+
+        const HOLIDAYS = [
+            { date: '01-01', name: 'Новый год', icon: '🎄', className: 'holiday-new-year' },
+            { date: '01-02', name: 'Продолжение Нового года', icon: '🎁', className: 'holiday-new-year' },
+            { date: '01-07', name: 'Рождество', icon: '🌟', className: 'holiday-christmas' },
+            { date: '02-23', name: 'День защитника Отечества', icon: '🎖️', className: 'holiday-may9' },
+            { date: '03-08', name: 'Международный женский день', icon: '💐', className: 'holiday-march8' },
+            { date: '05-01', name: 'Праздник Весны и Труда', icon: '🌷', className: 'holiday' },
+            { date: '05-09', name: 'День Победы', icon: '🎖️', className: 'holiday-may9' },
+            { date: '06-12', name: 'День России', icon: '🇷🇺', className: 'holiday-may9' },
+            { date: '11-04', name: 'День народного единства', icon: '🤝', className: 'holiday' },
+            { date: '12-31', name: 'Канун Нового года', icon: '🎉', className: 'holiday-new-year' }
+        ];
+
+        const BIRTHDAYS_GALAGUTSKY = [
+            { date: '02-28', year: 2012, name: 'Дочка Мила', relation: 'дочь', icon: '👧' },
+            { date: '08-01', year: 1984, name: 'Жена Света', relation: 'жена', icon: '👩' },
+            { date: '09-29', year: 1978, name: 'Я (Галагуцкий Е.В.)', relation: 'я', icon: '👨' },
+            { date: '02-18', year: 1952, name: 'Отец', relation: 'отец', icon: '👴' },
+            { date: '06-15', year: 1954, name: 'Мама', relation: 'мама', icon: '👵' },
+            { date: '04-01', year: 1982, name: 'Брат Генка', relation: 'брат', icon: '👨‍🦰' }
+        ];
+
+        const BIRTHDAYS_GALAGUTSKAYA = [
+            { date: '02-28', year: 2012, name: 'Дочка Мила', relation: 'дочь', icon: '👧' },
+            { date: '09-29', year: 1978, name: 'Муж Женя', relation: 'муж', icon: '👨' },
+            { date: '08-01', year: 1984, name: 'Мой день рождения', relation: 'я', icon: '🎂' }
+        ];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            startTimer();
+            initInternetIndicator();
+            loadSavedSignatureType();
+            checkAndApplyHolidayTheme();
+            checkAndStartSeasonEffect();
+            updateSchedule();
+            if (scheduleInterval) clearInterval(scheduleInterval);
+            scheduleInterval = setInterval(updateSchedule, 1000);
+            console.log('✅ Таймер смены загружен');
+        });
+
+        // ===== ФУНКЦИИ =====
+        function openVKGroup() {
+            window.open(VK_GROUP_URL, '_blank');
+            showCopyNotification('🌐 Открываем ВКонтакте...');
+        }
+
+        // ===== ПОЛНЫЙ ЭКРАН — только по кнопке =====
+        function toggleFullscreen() {
+            const doc = document;
+            const docEl = document.documentElement;
+            const isFullscreen = doc.fullscreenElement || doc.webkitFullscreenElement || doc.msFullscreenElement;
+            if (!isFullscreen) {
+                if (docEl.requestFullscreen) {
+                    docEl.requestFullscreen().catch(function(err) {
+                        console.log('Не удалось перейти в полноэкранный режим:', err);
+                    });
+                } else if (docEl.webkitRequestFullscreen) {
+                    docEl.webkitRequestFullscreen();
+                } else if (docEl.msRequestFullscreen) {
+                    docEl.msRequestFullscreen();
+                }
+                showCopyNotification('⛶ Полный экран включён');
+            } else {
+                if (doc.exitFullscreen) {
+                    doc.exitFullscreen();
+                } else if (doc.webkitExitFullscreen) {
+                    doc.webkitExitFullscreen();
+                } else if (doc.msExitFullscreen) {
+                    doc.msExitFullscreen();
+                }
+                showCopyNotification('⛶ Полный экран выключен');
+            }
+        }
+
+        function generateSignatureAndCopy() {
+            generateSignature();
+            // Небольшая задержка, чтобы DOM успел обновиться
+            setTimeout(function() {
+                copySignatureToClipboard();
+            }, 50);
+        }
+
+        function copySignatureToClipboard() {
+            if (!timerCurrentSignature) generateSignature();
+            
+            // Пробуем современный API
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(timerCurrentSignature).then(function() {
+                    showCopyNotification('✅ Подпись скопирована в буфер обмена!');
+                }).catch(function(err) {
+                    console.error('Ошибка при копировании через clipboard API: ', err);
+                    // Если не получилось — используем fallback
+                    fallbackCopyToClipboard(timerCurrentSignature);
+                });
+            } else {
+                // Сразу fallback для старых браузеров
+                fallbackCopyToClipboard(timerCurrentSignature);
+            }
+        }
+
+        function showCopyNotification(message) {
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.className = 'copy-notification';
+            document.body.appendChild(notification);
+            setTimeout(() => { notification.remove(); }, 2000);
+        }
+
+        function fallbackCopyToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            // Делаем его невидимым, но доступным для выделения
+            textArea.style.position = 'fixed';
+            textArea.style.top = '0';
+            textArea.style.left = '0';
+            textArea.style.width = '2em';
+            textArea.style.height = '2em';
+            textArea.style.padding = '0';
+            textArea.style.border = 'none';
+            textArea.style.outline = 'none';
+            textArea.style.boxShadow = 'none';
+            textArea.style.background = 'transparent';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showCopyNotification('✅ Подпись скопирована в буфер обмена!');
+                } else {
+                    showCopyNotification('❌ Не удалось скопировать подпись');
+                }
+            } catch (err) {
+                console.error('Ошибка при альтернативном копировании: ', err);
+                showCopyNotification('❌ Не удалось скопировать подпись');
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function getNextShiftForGalagutskySignature(now) {
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const totalMinutes = hours * 60 + minutes;
+            let shiftType;
+            let shiftEmoji;
+            if (totalMinutes >= 380 && totalMinutes < 1100) {
+                shiftType = '1 смена';
+                shiftEmoji = '☀️';
+            } else {
+                shiftType = '2 смена';
+                shiftEmoji = '🌙';
+            }
+            return {
+                shiftType: shiftType,
+                shiftEmoji: shiftEmoji,
+                date: new Date(now)
+            };
+        }
+
+        function getShiftTimeRange(now) {
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const totalMinutes = hours * 60 + minutes;
+            let start, end;
+            if (totalMinutes >= 380 && totalMinutes < 1100) {
+                start = '07:20';
+                end = '19:20';
+            } else {
+                start = '19:20';
+                end = '07:20';
+            }
+            return { start, end };
+        }
+
+        function getNextShiftForGalagutskayaSignature(now) {
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const totalMinutes = hours * 60 + minutes;
+            let shiftTime;
+            let shiftEmoji;
+            if (totalMinutes >= 380 && totalMinutes < 1100) {
+                shiftTime = '07:20-19:20';
+                shiftEmoji = '☀️';
+            } else {
+                shiftTime = '19:20-07:20';
+                shiftEmoji = '🌙';
+            }
+            return {
+                shiftTime: shiftTime,
+                shiftEmoji: shiftEmoji
+            };
+        }
+
+        // ---- Счётчик денег ----
+        function getMoneyMax(shiftType, isPartTime) {
+            if (isPartTime) return 9350;
+            if (shiftType === 'day') return 6050;
+            if (shiftType === 'night') return 6839;
+            return 0;
+        }
+
+        function updateMoneyCounter(now) {
+            const shiftInfo = getCurrentShiftInfo(now);
+            const isPartTime = document.getElementById('partTimeCheckbox').checked;
+            const maxMoney = getMoneyMax(shiftInfo.shift, isPartTime);
+            const el = document.getElementById('moneyAmount');
+            if (!shiftInfo.isActive || !shiftInfo.start || !shiftInfo.end) {
+                el.textContent = '0';
+                return;
+            }
+            const total = shiftInfo.end - shiftInfo.start;
+            const elapsed = Math.max(0, now - shiftInfo.start);
+            const progress = Math.min(1, elapsed / total);
+            const currentMoney = Math.round(progress * maxMoney);
+            el.textContent = currentMoney;
+        }
+
+        function generateSignature() {
+            const now = new Date();
+            const isPartTime = document.getElementById('partTimeCheckbox').checked;
+            const shiftRange = getShiftTimeRange(now);
+            const partTimeSuffix = isPartTime ? `, подработка ${shiftRange.start} - ${shiftRange.end}` : '';
+
+            if (currentSignatureType === 1) {
+                const nextShiftInfo = getNextShiftForGalagutskySignature(now);
+                const shiftType = nextShiftInfo.shiftType;
+                const shiftEmoji = nextShiftInfo.shiftEmoji;
+                const dateForSignature = nextShiftInfo.date;
+                const day = formatTime(dateForSignature.getDate());
+                const month = formatTime(dateForSignature.getMonth() + 1);
+                const year = dateForSignature.getFullYear();
+                const formattedDate = `${day}.${month}.${year}`;
+                timerCurrentSignature = `${shiftEmoji} Галагуцкий Е.В. (сварщик МКС), ${shiftType}, ${formattedDate}${partTimeSuffix}`;
+            } else {
+                const shiftInfo = getNextShiftForGalagutskayaSignature(now);
+                const shiftEmoji = shiftInfo.shiftEmoji;
+                const day = formatTime(now.getDate());
+                const month = formatTime(now.getMonth() + 1);
+                const year = now.getFullYear();
+                const formattedDate = `${day}.${month}.${year}`;
+                timerCurrentSignature = `${shiftEmoji} Галагуцкая Светлана Викторовна\n${formattedDate}\nBr2\n${shiftInfo.shiftTime}\nЛогистика\nНа смене.${isPartTime ? `\nПодработка ${shiftRange.start} - ${shiftRange.end}` : ''}`;
+            }
+            const signatureOutput = document.getElementById('signatureOutput');
+            if (signatureOutput) {
+                signatureOutput.textContent = timerCurrentSignature;
+                signatureOutput.style.display = 'block';
+            }
+            const copyBtn = document.getElementById('copyBtn');
+            if (copyBtn) copyBtn.style.display = 'block';
+            if (signatureOutput) signatureOutput.scrollIntoView({ behavior: 'smooth' });
+            updateLastSignatureDate();
+            return timerCurrentSignature;
+        }
+
+        function formatTime(num) { return num < 10 ? '0' + num : num; }
+
+        function createDateTime(date, hours, minutes) {
+            const newDate = new Date(date);
+            newDate.setHours(hours, minutes, 0, 0);
+            return newDate;
+        }
+
+        function calculateTimeRemaining(now, target) {
+            const diff = target - now;
+            if (diff <= 0) return '00:00:00';
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            return `${formatTime(hours)}:${formatTime(minutes)}:${formatTime(seconds)}`;
+        }
+
+        function getCurrentShiftInfo(now) {
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const totalMinutes = hours * 60 + minutes;
+            const today = new Date(now);
+            today.setHours(0, 0, 0, 0);
+            
+            if (totalMinutes >= 440 && totalMinutes < 1160) {
+                const shiftStart = new Date(today);
+                shiftStart.setHours(7, 20, 0, 0);
+                const shiftEnd = new Date(today);
+                shiftEnd.setHours(19, 20, 0, 0);
+                return { isActive: true, shift: "day", shiftText: "Дневная смена: 07:20 - 19:20", start: shiftStart, end: shiftEnd };
+            } else if (totalMinutes >= 1160 && totalMinutes < 1440) {
+                const shiftStart = new Date(today);
+                shiftStart.setHours(19, 20, 0, 0);
+                const shiftEnd = new Date(today);
+                shiftEnd.setDate(shiftEnd.getDate() + 1);
+                shiftEnd.setHours(7, 20, 0, 0);
+                return { isActive: true, shift: "night", shiftText: "Ночная смена: 19:20 - 07:20", start: shiftStart, end: shiftEnd };
+            } else if (totalMinutes >= 0 && totalMinutes < 440) {
+                const shiftStart = new Date(today);
+                shiftStart.setDate(shiftStart.getDate() - 1);
+                shiftStart.setHours(19, 20, 0, 0);
+                const shiftEnd = new Date(today);
+                shiftEnd.setHours(7, 20, 0, 0);
+                return { isActive: true, shift: "night", shiftText: "Ночная смена: 19:20 - 07:20", start: shiftStart, end: shiftEnd };
+            }
+            return { isActive: false, shift: "none", shiftText: "Между сменами", start: null, end: null };
+        }
+
+        function getDayShiftEventsGalagutsky(now) {
+            const today = new Date(now);
+            today.setHours(0, 0, 0, 0);
+            const events = [
+                { start: createDateTime(today, 7, 20), end: createDateTime(today, 9, 40), description: "работы до первого перерыва", type: "work" },
+                { start: createDateTime(today, 9, 40), end: createDateTime(today, 9, 50), description: "первого перерыва", type: "break" },
+                { start: createDateTime(today, 9, 50), end: createDateTime(today, 11, 40), description: "работы до обеда", type: "work" },
+                { start: createDateTime(today, 11, 40), end: createDateTime(today, 12, 10), description: "обеда", type: "meal" },
+                { start: createDateTime(today, 12, 10), end: createDateTime(today, 14, 40), description: "работы до второго перерыва", type: "work" },
+                { start: createDateTime(today, 14, 40), end: createDateTime(today, 14, 50), description: "второго перерыва", type: "break" },
+                { start: createDateTime(today, 14, 50), end: createDateTime(today, 17, 0), description: "работы до третьего перерыва", type: "work" },
+                { start: createDateTime(today, 17, 0), end: createDateTime(today, 17, 10), description: "третьего перерыва", type: "break" },
+                { start: createDateTime(today, 17, 10), end: createDateTime(today, 19, 20), description: "работы до конца смены", type: "work" }
+            ];
+            return events;
+        }
+
+        function getNightShiftEventsGalagutsky(now) {
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const totalMinutes = hours * 60 + minutes;
+            const today = new Date(now);
+            today.setHours(0, 0, 0, 0);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            if (totalMinutes >= 1160) {
+                const events = [
+                    { start: createDateTime(today, 19, 20), end: createDateTime(today, 21, 30), description: "работы до первого перерыва", type: "work" },
+                    { start: createDateTime(today, 21, 30), end: createDateTime(today, 21, 40), description: "первого перерыва", type: "break" },
+                    { start: createDateTime(today, 21, 40), end: createDateTime(tomorrow, 0, 0), description: "работы до обеда", type: "work" },
+                    { start: createDateTime(tomorrow, 0, 0), end: createDateTime(tomorrow, 0, 30), description: "обеда", type: "meal" },
+                    { start: createDateTime(tomorrow, 0, 30), end: createDateTime(tomorrow, 2, 20), description: "работы до перерыва", type: "work" },
+                    { start: createDateTime(tomorrow, 2, 20), end: createDateTime(tomorrow, 2, 30), description: "второго перерыва", type: "break" },
+                    { start: createDateTime(tomorrow, 2, 30), end: createDateTime(tomorrow, 5, 0), description: "работы до третьего перерыва", type: "work" },
+                    { start: createDateTime(tomorrow, 5, 0), end: createDateTime(tomorrow, 5, 10), description: "третьего перерыва", type: "break" },
+                    { start: createDateTime(tomorrow, 5, 10), end: createDateTime(tomorrow, 7, 20), description: "работы до конца смены", type: "work" }
+                ];
+                return events;
+            } else if (totalMinutes >= 0 && totalMinutes < 440) {
+                const events = [
+                    { start: createDateTime(today, 0, 0), end: createDateTime(today, 0, 30), description: "обеда", type: "meal" },
+                    { start: createDateTime(today, 0, 30), end: createDateTime(today, 2, 20), description: "работы до перерыва", type: "work" },
+                    { start: createDateTime(today, 2, 20), end: createDateTime(today, 2, 30), description: "второго перерыва", type: "break" },
+                    { start: createDateTime(today, 2, 30), end: createDateTime(today, 5, 0), description: "работы до третьего перерыва", type: "work" },
+                    { start: createDateTime(today, 5, 0), end: createDateTime(today, 5, 10), description: "третьего перерыва", type: "break" },
+                    { start: createDateTime(today, 5, 10), end: createDateTime(today, 7, 20), description: "работы до конца смены", type: "work" }
+                ];
+                return events;
+            }
+            return [];
+        }
+
+        function getDayShiftEventsGalagutskaya(now) {
+            const today = new Date(now);
+            today.setHours(0, 0, 0, 0);
+            const events = [
+                { start: createDateTime(today, 7, 20), end: createDateTime(today, 9, 40), description: "работы до первого перерыва", type: "work" },
+                { start: createDateTime(today, 9, 40), end: createDateTime(today, 9, 50), description: "первого перерыва", type: "break" },
+                { start: createDateTime(today, 9, 50), end: createDateTime(today, 12, 15), description: "работы до обеда", type: "work" },
+                { start: createDateTime(today, 12, 15), end: createDateTime(today, 12, 45), description: "обеда", type: "meal" },
+                { start: createDateTime(today, 12, 45), end: createDateTime(today, 14, 40), description: "работы до второго перерыва", type: "work" },
+                { start: createDateTime(today, 14, 40), end: createDateTime(today, 14, 50), description: "второго перерыва", type: "break" },
+                { start: createDateTime(today, 14, 50), end: createDateTime(today, 17, 0), description: "работы до третьего перерыва", type: "work" },
+                { start: createDateTime(today, 17, 0), end: createDateTime(today, 17, 10), description: "третьего перерыва", type: "break" },
+                { start: createDateTime(today, 17, 10), end: createDateTime(today, 19, 20), description: "работы до конца смены", type: "work" }
+            ];
+            return events;
+        }
+
+        function getNightShiftEventsGalagutskaya(now) {
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const totalMinutes = hours * 60 + minutes;
+            const today = new Date(now);
+            today.setHours(0, 0, 0, 0);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            if (totalMinutes >= 1160) {
+                const events = [
+                    { start: createDateTime(today, 19, 20), end: createDateTime(today, 21, 30), description: "работы до первого перерыва", type: "work" },
+                    { start: createDateTime(today, 21, 30), end: createDateTime(today, 21, 40), description: "первого перерыва", type: "break" },
+                    { start: createDateTime(today, 21, 40), end: createDateTime(tomorrow, 0, 35), description: "работы до обеда", type: "work" },
+                    { start: createDateTime(tomorrow, 0, 35), end: createDateTime(tomorrow, 1, 5), description: "обеда", type: "meal" },
+                    { start: createDateTime(tomorrow, 1, 5), end: createDateTime(tomorrow, 2, 20), description: "работы до перерыва", type: "work" },
+                    { start: createDateTime(tomorrow, 2, 20), end: createDateTime(tomorrow, 2, 30), description: "второго перерыва", type: "break" },
+                    { start: createDateTime(tomorrow, 2, 30), end: createDateTime(tomorrow, 5, 0), description: "работы до третьего перерыва", type: "work" },
+                    { start: createDateTime(tomorrow, 5, 0), end: createDateTime(tomorrow, 5, 10), description: "третьего перерыва", type: "break" },
+                    { start: createDateTime(tomorrow, 5, 10), end: createDateTime(tomorrow, 7, 20), description: "работы до конца смены", type: "work" }
+                ];
+                return events;
+            } else if (totalMinutes >= 0 && totalMinutes < 440) {
+                const events = [
+                    { start: createDateTime(today, 0, 35), end: createDateTime(today, 1, 5), description: "обеда", type: "meal" },
+                    { start: createDateTime(today, 1, 5), end: createDateTime(today, 2, 20), description: "работы до перерыва", type: "work" },
+                    { start: createDateTime(today, 2, 20), end: createDateTime(today, 2, 30), description: "второго перерыва", type: "break" },
+                    { start: createDateTime(today, 2, 30), end: createDateTime(today, 5, 0), description: "работы до третьего перерыва", type: "work" },
+                    { start: createDateTime(today, 5, 0), end: createDateTime(today, 5, 10), description: "третьего перерыва", type: "break" },
+                    { start: createDateTime(today, 5, 10), end: createDateTime(today, 7, 20), description: "работы до конца смены", type: "work" }
+                ];
+                return events;
+            }
+            return [];
+        }
+
+        function getShiftEvents(now, shiftType) {
+            if (currentSignatureType === 1) {
+                if (shiftType === "day") return getDayShiftEventsGalagutsky(now);
+                if (shiftType === "night") return getNightShiftEventsGalagutsky(now);
+            } else if (currentSignatureType === 2) {
+                if (shiftType === "day") return getDayShiftEventsGalagutskaya(now);
+                if (shiftType === "night") return getNightShiftEventsGalagutskaya(now);
+            }
+            return [];
+        }
+
+        function updateLastSignatureDate() { 
+            localStorage.setItem('lastSignatureDate', new Date().toDateString()); 
+        }
+
+        function initInternetIndicator() {
+            const indicator = document.getElementById('internetIndicator');
+            if (indicator) indicator.addEventListener('click', toggleIndicatorExpanded);
+            checkInternetConnection();
+            internetCheckInterval = setInterval(checkInternetConnection, 10000);
+            window.addEventListener('online', updateInternetIndicator);
+            window.addEventListener('offline', updateInternetIndicator);
+            restoreIndicatorState();
+        }
+
+        function toggleIndicatorExpanded() {
+            const indicator = document.getElementById('internetIndicator');
+            if (!indicator) return;
+            const isExpanded = indicator.classList.contains('expanded');
+            if (isExpanded) {
+                indicator.classList.remove('expanded');
+                localStorage.setItem('internetIndicatorExpanded', 'false');
+            } else {
+                indicator.classList.add('expanded');
+                localStorage.setItem('internetIndicatorExpanded', 'true');
+                updateInternetIndicatorContent();
+            }
+        }
+
+        function restoreIndicatorState() {
+            const indicator = document.getElementById('internetIndicator');
+            if (!indicator) return;
+            const isExpanded = localStorage.getItem('internetIndicatorExpanded') === 'true';
+            if (isExpanded) { indicator.classList.add('expanded'); updateInternetIndicatorContent(); }
+            else { indicator.classList.remove('expanded'); }
+        }
+
+        function updateInternetIndicatorContent() {
+            const indicator = document.getElementById('internetIndicator');
+            if (!indicator || !indicator.classList.contains('expanded')) return;
+            if (!navigator.onLine) {
+                const icon = indicator.querySelector('.internet-icon');
+                const text = indicator.querySelector('.internet-text');
+                if (icon) icon.textContent = '🚫';
+                if (text) text.textContent = 'Оффлайн';
+                return;
+            }
+            if (navigator.connection) {
+                const connection = navigator.connection;
+                const connectionType = connection.type || connection.effectiveType || 'unknown';
+                let connectionIcon = '🌐';
+                let connectionTypeText = 'Интернет';
+                if (connectionType === 'wifi' || connectionType === 'ethernet') { connectionTypeText = 'Wi-Fi'; connectionIcon = '📶'; }
+                else if (connectionType === 'cellular' || connectionType === '4g' || connectionType === '3g' || connectionType === '2g') { connectionTypeText = 'Мобильный'; connectionIcon = '📱'; }
+                const icon = indicator.querySelector('.internet-icon');
+                const text = indicator.querySelector('.internet-text');
+                if (icon) icon.textContent = connectionIcon;
+                if (text) text.textContent = connectionTypeText;
+            } else {
+                const icon = indicator.querySelector('.internet-icon');
+                const text = indicator.querySelector('.internet-text');
+                if (navigator.onLine) { if (icon) icon.textContent = '🌐'; if (text) text.textContent = 'Online'; }
+                else { if (icon) icon.textContent = '🚫'; if (text) text.textContent = 'Оффлайн'; }
+            }
+        }
+
+        function checkInternetConnection() {
+            const indicator = document.getElementById('internetIndicator');
+            if (!indicator) return;
+            if (!navigator.onLine) {
+                indicator.className = 'internet-indicator offline';
+                if (indicator.classList.contains('expanded')) updateInternetIndicatorContent();
+                return;
+            }
+            if (navigator.connection) {
+                const connection = navigator.connection;
+                const connectionType = connection.type || connection.effectiveType || 'unknown';
+                let indicatorClass = 'internet-indicator wifi';
+                if (connectionType === 'wifi' || connectionType === 'ethernet') indicatorClass = 'internet-indicator wifi';
+                else if (connectionType === 'cellular' || connectionType === '4g' || connectionType === '3g' || connectionType === '2g') indicatorClass = 'internet-indicator mobile';
+                indicator.className = indicatorClass;
+                if (indicator.classList.contains('expanded')) updateInternetIndicatorContent();
+            } else {
+                const userAgent = navigator.userAgent.toLowerCase();
+                if (userAgent.includes('mobile') || userAgent.includes('android') || userAgent.includes('iphone')) indicator.className = 'internet-indicator mobile';
+                else indicator.className = 'internet-indicator wifi';
+                if (indicator.classList.contains('expanded')) updateInternetIndicatorContent();
+            }
+        }
+
+        function updateInternetIndicator() { checkInternetConnection(); }
+
+        function updateShiftTheme() {
+            const now = new Date();
+            const shiftInfo = getCurrentShiftInfo(now);
+            const body = document.body;
+            body.classList.remove('day-shift', 'night-shift');
+            if (shiftInfo.shift === 'day') {
+                body.classList.add('day-shift');
+            } else if (shiftInfo.shift === 'night') {
+                body.classList.add('night-shift');
+            } else {
+                const hours = now.getHours();
+                if (hours >= 7 && hours < 20) {
+                    body.classList.add('day-shift');
+                } else {
+                    body.classList.add('night-shift');
+                }
+            }
+        }
+
+        function updateShiftTotalTimer(now, shiftStart, shiftEnd, shiftInfo) {
+            const elTime = document.getElementById('shiftTotalTime');
+            const elElapsed = document.getElementById('shiftElapsedTime');
+            const timerBlock = document.getElementById('shiftTotalTimer');
+            if (!elTime || !elElapsed || !timerBlock) return;
+
+            function getShiftColor(progress) {
+                let r, g, b;
+                if (progress <= 0.5) {
+                    const t = progress / 0.5;
+                    r = 255;
+                    g = Math.round(255 * t);
+                    b = 0;
+                } else {
+                    const t = (progress - 0.5) / 0.5;
+                    r = Math.round(255 * (1 - t));
+                    g = 255;
+                    b = 0;
+                }
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+
+            function formatDuration(ms) {
+                if (ms < 0) ms = 0;
+                const totalSec = Math.floor(ms / 1000);
+                const hours = Math.floor(totalSec / 3600);
+                const minutes = Math.floor((totalSec % 3600) / 60);
+                const seconds = totalSec % 60;
+                return `${formatTime(hours)}:${formatTime(minutes)}:${formatTime(seconds)}`;
+            }
+
+            // Смена не активна — показываем время до следующей и нулевое «прошло»
+            if (!shiftStart || !shiftEnd || !shiftInfo.isActive) {
+                const hours = now.getHours();
+                const minutes = now.getMinutes();
+                const totalMinutes = hours * 60 + minutes;
+                const today = new Date(now);
+                today.setHours(0,0,0,0);
+                let nextStart, nextName;
+                if (totalMinutes < 440) {
+                    nextStart = createDateTime(today, 7, 20);
+                    nextName = 'Дневная';
+                } else if (totalMinutes >= 440 && totalMinutes < 1160) {
+                    nextStart = createDateTime(today, 19, 20);
+                    nextName = 'Ночная';
+                } else {
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    nextStart = createDateTime(tomorrow, 7, 20);
+                    nextName = 'Дневная';
+                }
+                elTime.textContent = calculateTimeRemaining(now, nextStart);
+                elElapsed.textContent = '00:00:00';
+                timerBlock.style.background = 'rgba(128,128,128,0.15)';
+                elTime.style.color = '#aaa';
+                elElapsed.style.color = '#aaa';
+                updateMoneyCounter(now);
+                return;
+            }
+
+            const totalDuration = shiftEnd - shiftStart;
+            const elapsed = Math.max(0, now - shiftStart);
+            const progress = Math.min(1, Math.max(0, elapsed / totalDuration));
+
+            // Слева — сколько осталось
+            elTime.textContent = calculateTimeRemaining(now, shiftEnd);
+            // Справа — сколько прошло
+            elElapsed.textContent = formatDuration(elapsed);
+
+            const color = getShiftColor(progress);
+            elTime.style.color = color;
+            elElapsed.style.color = color;
+            timerBlock.style.background = 'rgba(0,0,0,0.03)';
+            timerBlock.style.borderColor = color;
+
+            updateMoneyCounter(now);
+        }
+
+        function updateTimer() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            const currentTimeEl = document.getElementById('sticky-current-time');
+            if (currentTimeEl) currentTimeEl.textContent = `Текущее время: ${formatTime(hours)}:${formatTime(minutes)}:${formatTime(seconds)}`;
+            
+            const currentShiftInfo = getCurrentShiftInfo(now);
+            const shiftStart = currentShiftInfo.start;
+            const shiftEnd = currentShiftInfo.end;
+            const shiftInfoEl = document.getElementById('shiftInfo');
+            if (shiftInfoEl) shiftInfoEl.textContent = currentShiftInfo.shiftText;
+            
+            updateShiftTheme();
+            updateShiftTotalTimer(now, shiftStart, shiftEnd, currentShiftInfo);
+            updateProgressBar(now, shiftStart, shiftEnd, currentShiftInfo);
+            
+            if (!currentShiftInfo.isActive || !shiftStart || !shiftEnd) {
+                showTimeToNextShift(now);
+                updateEventProgress(null, now);
+                return;
+            }
+            
+            const events = getShiftEvents(now, currentShiftInfo.shift);
+            let currentActiveEvent = null;
+            let nextEvent = null;
+            for (let i = 0; i < events.length; i++) {
+                const event = events[i];
+                if (now >= event.start && now < event.end) {
+                    currentActiveEvent = event;
+                    if (i < events.length - 1) nextEvent = events[i + 1];
+                    break;
+                }
+                if (event.start > now) { nextEvent = event; break; }
+            }
+            
+            const mainTimer = document.getElementById('mainTimer');
+            const timerEvent = document.getElementById('timerEvent');
+            const timerDisplay = document.getElementById('timerDisplay');
+            
+            if (currentActiveEvent) {
+                const timeRemaining = calculateTimeRemaining(now, currentActiveEvent.end);
+                if (mainTimer) mainTimer.textContent = timeRemaining;
+                if (timerEvent) timerEvent.textContent = currentActiveEvent.description;
+                if (timerDisplay) {
+                    timerDisplay.className = "timer-display";
+                    if (currentActiveEvent.type === "work") timerDisplay.classList.add("work-time");
+                    else if (currentActiveEvent.type === "break") timerDisplay.classList.add("break-time");
+                    else if (currentActiveEvent.type === "meal") timerDisplay.classList.add("meal-time");
+                }
+                updateEventProgress(currentActiveEvent, now);
+            } else if (nextEvent) {
+                const timeRemaining = calculateTimeRemaining(now, nextEvent.start);
+                if (mainTimer) mainTimer.textContent = timeRemaining;
+                if (timerEvent) timerEvent.textContent = `До ${nextEvent.description}`;
+                if (timerDisplay) timerDisplay.className = "timer-display next-shift-time";
+                updateEventProgress(null, now);
+            } else {
+                showTimeToNextShift(now);
+                updateEventProgress(null, now);
+            }
+        }
+
+        function updateEventProgress(event, now) {
+            const container = document.getElementById('event-progress-container');
+            const bar = document.getElementById('eventProgressBar');
+            const labelsContainer = document.getElementById('event-progress-labels');
+            const labelStart = document.getElementById('eventLabelStart');
+            const labelCurrent = document.getElementById('eventLabelCurrent');
+            const labelEnd = document.getElementById('eventLabelEnd');
+
+            if (!container || !bar || !labelsContainer) return;
+
+            if (!event || now < event.start || now >= event.end) {
+                container.classList.remove('visible');
+                labelsContainer.classList.remove('visible');
+                return;
+            }
+
+            container.classList.add('visible');
+            labelsContainer.classList.add('visible');
+
+            const total = event.end - event.start;
+            const elapsed = now - event.start;
+            let percentage = Math.min(100, (elapsed / total) * 100);
+            
+            bar.style.width = percentage + '%';
+            bar.className = 'event-progress-bar ' + event.type;
+
+            const startStr = formatTime(event.start.getHours()) + ':' + formatTime(event.start.getMinutes());
+            const endStr = formatTime(event.end.getHours()) + ':' + formatTime(event.end.getMinutes());
+            labelStart.textContent = '🟢 ' + startStr;
+            labelEnd.textContent = '🔴 ' + endStr;
+
+            let eventEmoji = '';
+            if (event.type === 'work') eventEmoji = '💼';
+            else if (event.type === 'break') eventEmoji = '☕';
+            else if (event.type === 'meal') eventEmoji = '🍽️';
+            
+            const timeRemaining = calculateTimeRemaining(now, event.end);
+            const parts = timeRemaining.split(':');
+            let timeLeftText = '';
+            if (parts[0] !== '00') timeLeftText = `${parseInt(parts[0])}ч ${parseInt(parts[1])}м`;
+            else if (parts[1] !== '00') timeLeftText = `${parseInt(parts[1])}м ${parseInt(parts[2])}с`;
+            else timeLeftText = `${parseInt(parts[2])}с`;
+
+            labelCurrent.textContent = `${eventEmoji} ${Math.round(percentage)}% (осталось ${timeLeftText})`;
+        }
+
+        function updateProgressBar(now, shiftStart, shiftEnd, shiftInfo) {
+            const progressBar = document.getElementById('progressBar');
+            const progressPercentage = document.getElementById('progressPercentage');
+            const milestone1 = document.getElementById('milestone1');
+            const milestone2 = document.getElementById('milestone2');
+            const milestone3 = document.getElementById('milestone3');
+            const halfShiftLabel = document.getElementById('halfShiftLabel');
+            const milestoneLabel1 = document.getElementById('milestoneLabel1');
+            const milestoneLabel3 = document.getElementById('milestoneLabel3');
+            if (!progressBar || !progressPercentage) return;
+            if (!shiftStart || !shiftEnd) {
+                progressBar.style.width = '0%';
+                progressPercentage.textContent = "0% выполнено (Между сменами)";
+                if (milestone1) milestone1.classList.remove('milestone-reached');
+                if (milestone2) milestone2.classList.remove('milestone-reached');
+                if (milestone3) milestone3.classList.remove('milestone-reached');
+                return;
+            }
+            
+            // === Обновляем подписи меток в зависимости от смены ===
+            // Для дневной смены (shift === 'day'): 10:20 и 16:20
+            // Для ночной смены (shift === 'night'): 22:20 и 04:20
+            const isDayShift = shiftInfo && shiftInfo.shift === 'day';
+            if (isDayShift) {
+                if (milestoneLabel1) milestoneLabel1.textContent = '10:20';
+                if (milestoneLabel3) milestoneLabel3.textContent = '16:20';
+                if (milestone1) milestone1.title = '10:20';
+                if (milestone3) milestone3.title = '16:20';
+            } else {
+                if (milestoneLabel1) milestoneLabel1.textContent = '22:20';
+                if (milestoneLabel3) milestoneLabel3.textContent = '04:20';
+                if (milestone1) milestone1.title = '22:20';
+                if (milestone3) milestone3.title = '04:20';
+            }
+            // ====================================================
+            
+            const totalShiftDuration = shiftEnd - shiftStart;
+            const elapsedTime = now - shiftStart;
+            let percentage = (elapsedTime / totalShiftDuration) * 100;
+            percentage = Math.max(0, Math.min(100, percentage));
+            progressBar.style.width = percentage + '%';
+            if (milestone1) milestone1.classList.toggle('milestone-reached', percentage >= 25);
+            if (milestone2) milestone2.classList.toggle('milestone-reached', percentage >= 50);
+            if (milestone3) milestone3.classList.toggle('milestone-reached', percentage >= 75);
+            const halfTime = new Date(shiftStart.getTime() + totalShiftDuration / 2);
+            const halfTimeString = halfTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            if (halfShiftLabel) {
+                halfShiftLabel.textContent = halfTimeString;
+            }
+            if (percentage < 50) {
+                progressPercentage.textContent = `${percentage.toFixed(1)}% выполнено · Середина в ${halfTimeString}`;
+            } else {
+                progressPercentage.textContent = `${percentage.toFixed(1)}% выполнено · Можно меняться (${halfTimeString})`;
+            }
+        }
+
+        function showTimeToNextShift(now) {
+            const mainTimer = document.getElementById('mainTimer');
+            const timerEvent = document.getElementById('timerEvent');
+            const shiftInfoElement = document.getElementById('shiftInfo');
+            const timerDisplay = document.getElementById('timerDisplay');
+            const progressPercentage = document.getElementById('progressPercentage');
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const totalMinutes = hours * 60 + minutes;
+            const today = new Date(now);
+            today.setHours(0, 0, 0, 0);
+            let nextShiftStart;
+            
+            if (totalMinutes < 440) {
+                nextShiftStart = createDateTime(today, 7, 20);
+                if (shiftInfoElement) shiftInfoElement.textContent = "Следующая: Дневная смена (07:20 - 19:20)";
+            } else if (totalMinutes >= 440 && totalMinutes < 1160) {
+                nextShiftStart = createDateTime(today, 19, 20);
+                if (shiftInfoElement) shiftInfoElement.textContent = "Следующая: Ночная смена (19:20 - 07:20)";
+            } else {
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                nextShiftStart = createDateTime(tomorrow, 7, 20);
+                if (shiftInfoElement) shiftInfoElement.textContent = "Следующая: Дневная смена (07:20 - 19:20)";
+            }
+            const timeRemaining = calculateTimeRemaining(now, nextShiftStart);
+            if (mainTimer) mainTimer.textContent = timeRemaining;
+            if (timerEvent) timerEvent.textContent = "До начала следующей смены";
+            if (timerDisplay) timerDisplay.className = "timer-display next-shift-time";
+            if (progressPercentage) progressPercentage.textContent = "0% выполнено (Между сменами)";
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => updateTimer(), 1000);
+            updateTimer();
+        }
+
+        function updateSchedule() {
+            const now = new Date();
+            const currentShiftInfo = getCurrentShiftInfo(now);
+            document.getElementById('scheduleShiftInfo').textContent = currentShiftInfo.shiftText;
+            const events = getShiftEvents(now, currentShiftInfo.shift);
+            const scheduleList = document.getElementById('scheduleList');
+            scheduleList.innerHTML = '';
+            events.forEach((event, index) => {
+                const li = document.createElement('li');
+                li.className = `schedule-item ${event.type}`;
+                if (currentShiftInfo.shift === "night") li.classList.add('night');
+                if (now >= event.start && now < event.end) li.classList.add('active');
+                else if (now >= event.end) li.classList.add('completed');
+                const startTime = formatTime(event.start.getHours()) + ':' + formatTime(event.start.getMinutes());
+                const endTime = formatTime(event.end.getHours()) + ':' + formatTime(event.end.getMinutes());
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'schedule-item-content';
+                const iconSpan = document.createElement('div');
+                iconSpan.className = 'schedule-icon';
+                if (event.type === 'work') iconSpan.textContent = '💼';
+                else if (event.type === 'break') iconSpan.textContent = '☕';
+                else if (event.type === 'meal') iconSpan.textContent = '🍽️';
+                const descSpan = document.createElement('div');
+                descSpan.className = 'schedule-desc';
+                descSpan.textContent = event.description;
+                const timeSpan = document.createElement('div');
+                timeSpan.className = 'schedule-time';
+                timeSpan.textContent = `${startTime} - ${endTime}`;
+                contentDiv.appendChild(iconSpan);
+                contentDiv.appendChild(descSpan);
+                contentDiv.appendChild(timeSpan);
+                li.appendChild(contentDiv);
+                if (now >= event.start && now < event.end) {
+                    const progressContainer = document.createElement('div');
+                    progressContainer.className = 'item-progress-container';
+                    const progressBar = document.createElement('div');
+                    progressBar.className = 'item-progress-bar';
+                    const progressText = document.createElement('div');
+                    progressText.className = 'item-progress-text';
+                    const totalDuration = event.end - event.start;
+                    const elapsed = now - event.start;
+                    const progressPercentage = Math.min(100, (elapsed / totalDuration) * 100);
+                    progressBar.style.width = `${progressPercentage}%`;
+                    const timeRemaining = calculateTimeRemaining(now, event.end);
+                    const timeRemainingParts = timeRemaining.split(':');
+                    let timeText = '';
+                    if (timeRemainingParts[0] !== '00') timeText = `${parseInt(timeRemainingParts[0])}ч ${parseInt(timeRemainingParts[1])}м осталось`;
+                    else if (timeRemainingParts[1] !== '00') timeText = `${parseInt(timeRemainingParts[1])}м ${parseInt(timeRemainingParts[2])}с осталось`;
+                    else timeText = `${parseInt(timeRemainingParts[2])}с осталось`;
+                    progressText.textContent = `${Math.round(progressPercentage)}% (${timeText})`;
+                    progressContainer.appendChild(progressBar);
+                    li.appendChild(progressContainer);
+                    li.appendChild(progressText);
+                }
+                scheduleList.appendChild(li);
+            });
+        }
+
+        async function checkAndApplyHolidayTheme() {
+            const today = new Date();
+            const month = today.getMonth() + 1;
+            const day = today.getDate();
+            const todayStr = `${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+            const year = today.getFullYear();
+            const currentBirthdays = getCurrentBirthdays();
+            const birthday = currentBirthdays.find(b => b.date === todayStr);
+            if (birthday) {
+                const age = year - birthday.year;
+                const holiday = { date: todayStr, name: `${birthday.icon} День рождения ${birthday.name}! ${age} лет`, icon: birthday.icon, className: 'holiday-birthday' };
+                currentHoliday = holiday;
+                applyHolidayTheme(holiday);
+                return;
+            }
+            let holiday = HOLIDAYS.find(h => h.date === todayStr);
+            if (!holiday && navigator.onLine) holiday = await fetchHolidayFromAPI(today);
+            if (holiday) { currentHoliday = holiday; applyHolidayTheme(holiday); }
+        }
+
+        function getCurrentBirthdays() { return currentSignatureType === 1 ? BIRTHDAYS_GALAGUTSKY : BIRTHDAYS_GALAGUTSKAYA; }
+
+        async function fetchHolidayFromAPI(date) {
+            try {
+                const year = date.getFullYear();
+                const month = date.getMonth() + 1;
+                const day = date.getDate();
+                const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/RU`, { timeout: 5000 });
+                if (!response.ok) throw new Error('API не отвечает');
+                const holidays = await response.json();
+                const todayHoliday = holidays.find(h => {
+                    const holidayDate = new Date(h.date);
+                    return holidayDate.getMonth() + 1 === month && holidayDate.getDate() === day;
+                });
+                if (todayHoliday) {
+                    let className = 'holiday';
+                    let icon = '🎉';
+                    if (todayHoliday.name.toLowerCase().includes('новый год') || todayHoliday.name.toLowerCase().includes('рождество')) { className = 'holiday-new-year'; icon = '🎄'; }
+                    else if (todayHoliday.name.toLowerCase().includes('8 марта') || todayHoliday.name.toLowerCase().includes('женский')) { className = 'holiday-march8'; icon = '💐'; }
+                    else if (todayHoliday.name.toLowerCase().includes('9 мая') || todayHoliday.name.toLowerCase().includes('победы')) { className = 'holiday-may9'; icon = '🎖️'; }
+                    return { date: `${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`, name: todayHoliday.localName || todayHoliday.name, icon: icon, className: className };
+                }
+            } catch (error) { return null; }
+            return null;
+        }
+
+        function applyHolidayTheme(holiday) {
+            const holidayClasses = ['holiday', 'holiday-new-year', 'holiday-christmas', 'holiday-valentine', 'holiday-march8', 'holiday-may9', 'holiday-birthday', 'holiday-family'];
+            holidayClasses.forEach(cls => document.body.classList.remove(cls));
+            document.body.classList.add('holiday', holiday.className);
+            const banner = document.getElementById('holidayBanner');
+            const holidayIcon = document.getElementById('holidayIcon');
+            const holidayText = document.getElementById('holidayText');
+            if (banner && holidayIcon && holidayText) {
+                holidayIcon.textContent = holiday.icon;
+                holidayText.textContent = `Сегодня: ${holiday.name}`;
+                banner.className = 'holiday-banner active';
+                banner.classList.add(holiday.className);
+                banner.style.display = 'block';
+            }
+            document.title = `${holiday.icon} Таймер смены - ${holiday.name}`;
+        }
+
+        function checkAndStartSeasonEffect() {
+            const now = new Date();
+            const month = now.getMonth() + 1;
+            let season;
+            if (month >= 3 && month <= 5) season = 'spring';
+            else if (month >= 6 && month <= 8) season = 'summer';
+            else if (month >= 9 && month <= 11) season = 'autumn';
+            else season = 'winter';
+            startSeasonEffect(season);
+        }
+
+        function startSeasonEffect(season) {
+            const seasonContainer = document.getElementById('season-container');
+            if (!seasonContainer) return;
+            seasonContainer.style.display = 'block';
+            seasonContainer.innerHTML = '';
+            if (seasonInterval) clearInterval(seasonInterval);
+            if (season === 'winter') startWinterEffect();
+            else if (season === 'spring') startSpringEffect();
+            else if (season === 'summer') startSummerEffect();
+            else if (season === 'autumn') startAutumnEffect();
+        }
+
+        function startWinterEffect() {
+            const seasonContainer = document.getElementById('season-container');
+            if (!seasonContainer) return;
+            for (let i = 0; i < 12; i++) setTimeout(() => createSnowflake(), Math.random() * 1000);
+            seasonInterval = setInterval(() => { if (Math.random() > 0.3) createSnowflake(); }, 300);
+            function createSnowflake() {
+                const snowflake = document.createElement('div');
+                snowflake.classList.add('snowflake');
+                const size = Math.random() * 7 + 3;
+                snowflake.style.width = `${size}px`;
+                snowflake.style.height = `${size}px`;
+                snowflake.style.left = `${Math.random() * 100}vw`;
+                const duration = Math.random() * 5 + 5;
+                snowflake.style.animationDuration = `${duration}s`;
+                snowflake.style.animationDelay = `${Math.random() * 5}s`;
+                snowflake.style.background = `rgba(240, 248, 255, ${Math.random() * 0.7 + 0.3})`;
+                seasonContainer.appendChild(snowflake);
+                setTimeout(() => { if (snowflake.parentNode === seasonContainer) seasonContainer.removeChild(snowflake); }, (duration + 5) * 1000);
+            }
+        }
+
+        function startSpringEffect() {
+            const seasonContainer = document.getElementById('season-container');
+            if (!seasonContainer) return;
+            const tulipEmojis = ['🌷', '🌸', '💮', '🏵️'];
+            for (let i = 0; i < 10; i++) setTimeout(() => createTulip(), Math.random() * 2000);
+            seasonInterval = setInterval(() => { if (Math.random() > 0.7) createTulip(); }, 2000);
+            function createTulip() {
+                const tulip = document.createElement('div');
+                tulip.classList.add('tulip');
+                tulip.textContent = tulipEmojis[Math.floor(Math.random() * tulipEmojis.length)];
+                tulip.style.left = `${Math.random() * 100}vw`;
+                tulip.style.fontSize = `${Math.random() * 20 + 30}px`;
+                tulip.style.color = ['#ff6b6b', '#ff8e8e', '#ff5252', '#ff4081', '#f48fb1'][Math.floor(Math.random() * 5)];
+                seasonContainer.appendChild(tulip);
+                setTimeout(() => { if (tulip.parentNode === seasonContainer) seasonContainer.removeChild(tulip); }, 10000 + Math.random() * 5000);
+            }
+        }
+
+        function startSummerEffect() {
+            const seasonContainer = document.getElementById('season-container');
+            if (!seasonContainer) return;
+            for (let i = 0; i < 45; i++) setTimeout(() => createGrassBlade(), Math.random() * 1500);
+            seasonInterval = setInterval(() => { if (Math.random() > 0.8) createGrassBlade(); }, 1500);
+            function createGrassBlade() {
+                const grass = document.createElement('div');
+                grass.classList.add('grass-blade');
+                grass.style.left = `${Math.random() * 100}vw`;
+                const height = Math.random() * 50 + 30;
+                grass.style.setProperty('--grass-height', `${height}px`);
+                grass.style.width = `${Math.random() * 3 + 1}px`;
+                grass.style.transform = `skewX(${Math.random() * 40 - 20}deg)`;
+                seasonContainer.appendChild(grass);
+                setTimeout(() => { if (grass.parentNode === seasonContainer) seasonContainer.removeChild(grass); }, 12000 + Math.random() * 6000);
+            }
+        }
+
+        function startAutumnEffect() {
+            const seasonContainer = document.getElementById('season-container');
+            if (!seasonContainer) return;
+            const leafEmojis = ['🍁', '🍂', '🥮', '🌰'];
+            for (let i = 0; i < 6; i++) setTimeout(() => createLeaf(), Math.random() * 1500);
+            seasonInterval = setInterval(() => createLeaf(), 1000 + Math.random() * 2000);
+            function createLeaf() {
+                const leaf = document.createElement('div');
+                leaf.classList.add('leaf');
+                leaf.textContent = leafEmojis[Math.floor(Math.random() * leafEmojis.length)];
+                leaf.style.left = `${Math.random() * 100}vw`;
+                leaf.style.fontSize = `${Math.random() * 20 + 20}px`;
+                leaf.style.animation = `leaf-fall ${Math.random() * 4 + 6}s linear forwards`;
+                leaf.style.animationDelay = `${Math.random() * 2}s`;
+                leaf.style.color = ['#ff9800', '#ff5722', '#795548', '#8d6e63', '#d84315'][Math.floor(Math.random() * 5)];
+                seasonContainer.appendChild(leaf);
+                setTimeout(() => { if (leaf.parentNode === seasonContainer) seasonContainer.removeChild(leaf); }, 8000);
+            }
+        }
+
+        function switchSignatureType(type) {
+            currentSignatureType = type;
+            const btn1 = document.getElementById('btnSignature1');
+            const btn2 = document.getElementById('btnSignature2');
+            if (btn1 && btn2) {
+                btn1.classList.toggle('active', currentSignatureType === 1);
+                btn2.classList.toggle('active', currentSignatureType === 2);
+            }
+            localStorage.setItem('signatureType', currentSignatureType.toString());
+            checkAndApplyHolidayTheme();
+            updateSchedule();
+        }
+
+        function loadSavedSignatureType() {
+            const savedType = localStorage.getItem('signatureType');
+            if (savedType) {
+                currentSignatureType = parseInt(savedType);
+                const btn1 = document.getElementById('btnSignature1');
+                const btn2 = document.getElementById('btnSignature2');
+                if (btn1 && btn2) {
+                    btn1.classList.toggle('active', currentSignatureType === 1);
+                    btn2.classList.toggle('active', currentSignatureType === 2);
+                }
+            }
+        }
+
+        document.getElementById('partTimeCheckbox').addEventListener('change', function() {
+            updateMoneyCounter(new Date());
+        });
+    </script>
+</body>
+</html>
